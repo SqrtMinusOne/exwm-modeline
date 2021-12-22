@@ -21,7 +21,7 @@ As the package isn't yet available anywhere but in this repository, you can clon
 My preferred way is to use =use-package= with =straight=:
 #+begin_src emacs-lisp
 (use-package exwm-modeline
-  :straight (:host github :repo "SqrtMinusOne/exwm-modelline")
+  :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
   :after (exwm))
 #+end_src
 

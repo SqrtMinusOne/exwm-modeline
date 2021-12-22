@@ -6,7 +6,7 @@
 
 ;; Author: Korytov Pavel <thexcloud@gmail.com>
 ;; Maintainer: Korytov Pavel <thexcloud@gmail.com>
-;; Version: 0.1.4
+;; Version: 0.1.0
 ;; Package-Requires: ((emacs "27.1") (exwm "0.26"))
 ;; Homepage: https://github.com/SqrtMinusOne/pomm.el
 
