@@ -39,8 +39,9 @@
 
 (defcustom exwm-modeline-dividers '("[" "]" "|")
   "Plist of strings used to create the string shown in the modeline.
+
 First string is the start of the modestring, second is the
-closing of the mode string, and the last is the divider between
+closing of the modestring, and the last is the divider between
 workspaces."
   :group 'exwm-modeline
   :type '(list (string :tag "Open")
@@ -48,14 +49,12 @@ workspaces."
                (string :tag "Divider")))
 
 (defcustom exwm-modeline-short nil
-  "When t, show a shortened modeline string.
-
-TODO."
+  "When t, display only the current workspace in the modeline."
   :group 'exwm-modeline
   :type 'boolean)
 
-(defcustom exwm-modeline-randr nil
-  "TODO."
+(defcustom exwm-modeline-randr t
+  "When t, show only workspaces on the current monitor."
   :group 'exwm-modeline
   :type 'boolean)
 
@@ -80,14 +79,17 @@ TODO."
   :group 'exwm-modeline)
 
 (defun exwm-modeline--urgent-p (frame)
+  "Determine if FRAME is tagged as urgent."
   (frame-parameter frame 'exwm-urgency))
 
 (defun exwm-modeline--populated-p (frame)
+  "Determine if FRAME has any X windows."
   (cl-loop for item in exwm--id-buffer-alist
            if (eq frame (buffer-local-value 'exwm--frame (cdr item)))
            return t))
 
 (defun exwm-modeline--click (event)
+  "Process a click EVENT on the modeline segment."
   (interactive "e")
   (when-let
       (target
@@ -100,10 +102,13 @@ TODO."
 (defconst exwm-modeline-line-map
   (let ((map (make-sparse-keymap)))
     (define-key map [mode-line mouse-1] #'exwm-modeline--click)
-    map))
+    map)
+  "A keymap for the modeline segment.")
 
 (defun exwm-modeline--format-list (workspace-list)
-  "Format the modestring for the current frame."
+  "Format the modestring for the current frame.
+
+WORKSPACE-LIST is the list of frames to display. "
   (cl-loop for frame in workspace-list
            for i from 0 to (length workspace-list)
            for workspace-name = (funcall exwm-workspace-index-map
@@ -129,12 +134,20 @@ TODO."
            else collect (nth 2 exwm-modeline-dividers)))
 
 (defun exwm-modeline--randr-workspaces ()
+  "Get workspaces on the same monitor as current frame."
   (if-let ((monitor (plist-get exwm-randr-workspace-output-plist
                                (cl-position (selected-frame)
-                                            exwm-workspace--list))))
-      (cl-loop for (key value) on exwm-randr-workspace-output-plist by 'cddr
-               if (string-equal value monitor)
-               collect (nth key exwm-workspace--list))
+                                            exwm-workspace--list)))
+           ;; This list of frame actually can be wrongly ordered,
+           ;; hence the second loop.  The number of values is quite
+           ;; small, so it's not like o(n^2) can cause any issues.
+           (frames (cl-loop for (key value) on exwm-randr-workspace-output-plist
+                            by 'cddr
+                            if (string-equal value monitor)
+                            collect (nth key exwm-workspace--list))))
+      (cl-loop for frame in exwm-workspace--list
+               if (member frame frames)
+               collect frame)
     (cl-loop with indices = (cl-loop
                              for (key value) on exwm-randr-workspace-output-plist
                              by 'cddr collect key)
@@ -144,6 +157,7 @@ TODO."
              collect frame)))
 
 (defun exwm-modeline--format ()
+  "Format a modeline string for the current workspace."
   (exwm-modeline--format-list
    (cond ((or exwm-modeline-short exwm--floating-frame)
           (list (selected-frame)))
@@ -151,6 +165,7 @@ TODO."
          (t exwm-workspace--list))))
 
 (defun exwm-modeline-update ()
+  "Update EXWM modefine for every frame."
   (interactive)
   (cl-loop for frame in exwm-workspace--list
            do (with-selected-frame frame
@@ -158,13 +173,38 @@ TODO."
                                      (exwm-modeline--format)))))
 
 (defun exwm-modeline-segment ()
+  "Get a modeline string for the current EXWM frame."
   (frame-parameter nil 'exwm-modeline--string))
 
 (defun exwm-modeline--unmanage-advice (&rest _)
+  "An advice that updates the modeline.
+
+This one is meant to be attached :after
+`exwm-manage--unmanage-window', because that's when a workspace
+can lose all its X windows and thus may become \"unpopulated\",
+i.e. the face in the segment has to change."
   (exwm-modeline-update))
 
 ;;;###autoload
-(define-minor-mode exwm-modeline-mode ()
+(define-minor-mode exwm-modeline-mode
+  "A mode for displaying EXWM workspaces in the modeline.
+
+By default, the mode displays all the workspaces on the current
+monitor.  To display only the current workspace, enable
+`exwm-modeline-short', and to disable the filtering by the
+monitor, disable `exwm-modeline-randr'.
+
+Also take a look at the `exwm-modeline' group for faces
+customization.
+
+This implementation indents to reduce the count of times of
+evaluating the modestring; the rendered modestring is saved as a
+frame parameter, and `exwm-modeline-segment' just returns it.
+
+The update itself is done via the `exwm-modeline-update'
+function.  You may need to run it manually after updating the
+parameters, but other than that, this mode should cover all the
+cases when the workspace list changes."
   :global t
   (if exwm-modeline-mode
       (progn
