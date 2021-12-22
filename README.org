@@ -1,0 +1,41 @@
+#+TITLE: exwm-modeline
+
+A modeline segment to display exwm workspaces.
+
+Here's how it looks near the list of [[https://github.com/nex3/perspective-el][perspectives]] (the segment of the current package is to the left):
+[[./img/screenshot.png]]
+- workspaces 0 and 5 do not have any X windows
+- workspace 1 is the current workspace
+- workspace 2 has at least one X window.
+
+Features:
+- Supports =exwm-randr= to display only workspaces related to the current monitor.
+- Numbers are clickable.
+
+* Installation
+As the package isn't yet available anywhere but in this repository, you can clone the repository, add it to the =load-path=, and =require= the package:
+#+begin_src emacs-lisp
+(require 'exwm-modeline)
+#+end_src
+
+My preferred way is to use =use-package= with =straight=:
+#+begin_src emacs-lisp
+(use-package exwm-modeline
+  :straight (:host github :repo "SqrtMinusOne/exwm-modelline")
+  :after (exwm))
+#+end_src
+
+Then put a call to =exwm-modeline-mode= somewhere after the moment when EXWM has been initialized, for instance:
+#+begin_src emacs-lisp
+(add-hook 'exwm-init-hook #'exwm-modeline-mode)
+#+end_src
+
+* Customization
+Set =exwm-modeline-randr= to nil to turn off filtering of workspaces by monitor.
+
+Set =exwm-modeline-short= to display only the current workspace in the modeline.
+
+* Credits
+[[https://github.com/nex3/perspective-el][perspective.el]] by [[https://github.com/nex3][@nex3]] was extremely instructive on how to make a modeline segment individual to a particular frame and avoid recalculating it too often.
+
+[[https://github.com/elken/doom-modeline-exwm][doom-modeline-exwm]] by [[https://github.com/elken][@elken]] also was a source of inspiration.

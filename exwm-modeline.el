@@ -27,14 +27,21 @@
 
 ;;; Commentary:
 
-;; TODO
+;; A modeline segment to display exwm workspaces.
+;;
+;; Features:
+;; - Supports `exwm-randr' to display only of workspaces related to
+;;   the the current monitor.
+;; - The segment is clickable.
+;;
+;; Take a look at `exwm-modeline-mode' for more info.
 
-;;; Code
+;;; Code:
 (require 'exwm-workspace)
 (require 'exwm-manage)
 
 (defgroup exwm-modeline nil
-  "A modeline segment to show EXWM workspaces"
+  "A modeline segment to show EXWM workspaces."
   :group 'mode-line)
 
 (defcustom exwm-modeline-dividers '("[" "]" "|")
@@ -108,7 +115,7 @@ workspaces."
 (defun exwm-modeline--format-list (workspace-list)
   "Format the modestring for the current frame.
 
-WORKSPACE-LIST is the list of frames to display. "
+WORKSPACE-LIST is the list of frames to display."
   (cl-loop for frame in workspace-list
            for i from 0 to (length workspace-list)
            for workspace-name = (funcall exwm-workspace-index-map
@@ -177,7 +184,7 @@ WORKSPACE-LIST is the list of frames to display. "
   (frame-parameter nil 'exwm-modeline--string))
 
 (defun exwm-modeline--unmanage-advice (&rest _)
-  "An advice that updates the modeline.
+  "An advice to update the modeline.
 
 This one is meant to be attached :after
 `exwm-manage--unmanage-window', because that's when a workspace
@@ -188,6 +195,9 @@ i.e. the face in the segment has to change."
 ;;;###autoload
 (define-minor-mode exwm-modeline-mode
   "A mode for displaying EXWM workspaces in the modeline.
+
+Make sure to call this after EXWM was initialized, for instance
+in `exwm-init-hook'.
 
 By default, the mode displays all the workspaces on the current
 monitor.  To display only the current workspace, enable
@@ -208,6 +218,7 @@ cases when the workspace list changes."
   :global t
   (if exwm-modeline-mode
       (progn
+        (exwm-modeline-update)
         (add-to-list 'global-mode-string '(:eval (exwm-modeline-segment)))
         (add-hook 'exwm-workspace-list-change-hook #'exwm-modeline-update)
         (add-hook 'exwm-randr-refresh-hook #'exwm-modeline-update)
