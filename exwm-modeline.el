@@ -31,6 +31,7 @@
 
 ;;; Code
 (require 'exwm-workspace)
+(require 'exwm-manage)
 
 (defgroup exwm-modeline nil
   "A modeline segment to show EXWM workspaces"
@@ -50,6 +51,11 @@ workspaces."
   "When t, show a shortened modeline string.
 
 TODO."
+  :group 'exwm-modeline
+  :type 'boolean)
+
+(defcustom exwm-modeline-randr nil
+  "TODO."
   :group 'exwm-modeline
   :type 'boolean)
 
@@ -96,12 +102,12 @@ TODO."
     (define-key map [mode-line mouse-1] #'exwm-modeline--click)
     map))
 
-(defun exwm-modeline--format-list (workspace-list index-list)
+(defun exwm-modeline--format-list (workspace-list)
   "Format the modestring for the current frame."
-  (cl-loop for index in index-list
-           for frame in workspace-list
+  (cl-loop for frame in workspace-list
            for i from 0 to (length workspace-list)
-           for workspace-name = (funcall exwm-workspace-index-map index)
+           for workspace-name = (funcall exwm-workspace-index-map
+                                         (exwm-workspace--position frame))
            with current-frame = (selected-frame)
            if (= i 0) collect (nth 0 exwm-modeline-dividers)
            collect
@@ -122,13 +128,27 @@ TODO."
            collect (nth 1 exwm-modeline-dividers)
            else collect (nth 2 exwm-modeline-dividers)))
 
+(defun exwm-modeline--randr-workspaces ()
+  (if-let ((monitor (plist-get exwm-randr-workspace-output-plist
+                               (cl-position (selected-frame)
+                                            exwm-workspace--list))))
+      (cl-loop for (key value) on exwm-randr-workspace-output-plist by 'cddr
+               if (string-equal value monitor)
+               collect (nth key exwm-workspace--list))
+    (cl-loop with indices = (cl-loop
+                             for (key value) on exwm-randr-workspace-output-plist
+                             by 'cddr collect key)
+             for i from 0 to (1- (length exwm-workspace--list))
+             for frame in exwm-workspace--list
+             unless (member i indices)
+             collect frame)))
+
 (defun exwm-modeline--format ()
   (exwm-modeline--format-list
-   (if exwm-modeline-short (list (selected-frame))
-     exwm-workspace--list)
-   (if exwm-modeline-short (list exwm-workspace-current-index)
-     (cl-loop for i from 0 to (1- (length exwm-workspace--list))
-              collect i))))
+   (cond ((or exwm-modeline-short exwm--floating-frame)
+          (list (selected-frame)))
+         (exwm-modeline-randr (exwm-modeline--randr-workspaces))
+         (t exwm-workspace--list))))
 
 (defun exwm-modeline-update ()
   (interactive)
