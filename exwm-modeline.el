@@ -6,7 +6,7 @@
 
 ;; Author: Korytov Pavel <thexcloud@gmail.com>
 ;; Maintainer: Korytov Pavel <thexcloud@gmail.com>
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "27.1") (exwm "0.26"))
 ;; Homepage: https://github.com/SqrtMinusOne/pomm.el
 
@@ -66,8 +66,10 @@ workspaces."
   :type 'boolean)
 
 (defface exwm-modeline-current-workspace
-  '((t (:inherit warning :weight bold)))
-  "Face for the current workspace."
+  ;; I'd rather :inherit warning there, but that could lead to
+  ;; unexpected effects.
+  `((t :foreground ,(face-foreground 'warning) :weight bold))
+  "Face for the current workspace. "
   :group 'exwm-modeline)
 
 (defface exwm-modeline-populated-workspace
@@ -81,7 +83,7 @@ workspaces."
   :group 'exwm-modeline)
 
 (defface exwm-modeline-urgent-workspace
-  '((t (:inherit error :weight bold)))
+  '((t (:inherit custom-invalid)))
   "Face for any workspace that is tagged as urgent by X."
   :group 'exwm-modeline)
 

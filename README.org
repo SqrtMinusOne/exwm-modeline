@@ -33,7 +33,7 @@ Then put a call to =exwm-modeline-mode= somewhere after the moment when EXWM has
 * Customization
 Set =exwm-modeline-randr= to nil to turn off filtering of workspaces by monitor.
 
-Set =exwm-modeline-short= to display only the current workspace in the modeline.
+Set =exwm-modeline-short= to =t= display only the current workspace in the modeline.
 
 * Credits
 [[https://github.com/nex3/perspective-el][perspective.el]] by [[https://github.com/nex3][@nex3]] was extremely instructive on how to make a modeline segment individual to a particular frame and avoid recalculating it too often.
