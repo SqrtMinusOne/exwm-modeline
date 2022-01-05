@@ -49,7 +49,7 @@
 (defcustom exwm-modeline-dividers '("[" "]" "|")
   "Plist of strings used to create the string shown in the modeline.
 
-First string is the start of the modestring, second is the
+The first string is the start of the modestring, second is the
 closing of the modestring, and the last is the divider between
 workspaces."
   :group 'exwm-modeline
@@ -58,14 +58,38 @@ workspaces."
                (string :tag "Divider")))
 
 (defcustom exwm-modeline-short nil
-  "When t, display only the current workspace in the modeline."
+  "When set, display only the current workspace in the modeline."
   :group 'exwm-modeline
-  :type 'boolean)
+  :type 'boolean
+  :set (lambda (sym value)
+         (set-default sym value)
+         (exwm-modeline-update)))
 
 (defcustom exwm-modeline-randr t
-  "When t, show only workspaces on the current monitor."
+  "When set, only show workspaces on the current monitor."
   :group 'exwm-modeline
-  :type 'boolean)
+  :type 'boolean
+  :set (lambda (sym value)
+         (set-default sym value)
+         (exwm-modeline-update)))
+
+(defcustom exwm-modeline-display-urgent t
+  "When set, display the urgent status in the modeline.
+
+With that set, the modeline will be updated on every workspace
+switch, so the number of updates is increased significantly."
+  :group 'exwm-modeline
+  :type 'boolean
+  :set (lambda (sym value)
+         (set-default sym value)
+         (exwm-modeline-update)
+         (when exwm-modeline-mode
+           (if value
+               (progn
+                 (advice-add #'exwm--update-hints :after #'exwm-modeline--urgency-advice)
+                 (add-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice))
+             (advice-remove #'exwm--update-hints #'exwm-modeline--urgency-advice)
+             (remove-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)))))
 
 (defface exwm-modeline-current-workspace
   ;; I'd rather :inherit and override warning there, but well
@@ -89,8 +113,11 @@ workspaces."
   :group 'exwm-modeline)
 
 (defun exwm-modeline--urgent-p (frame)
-  "Determine if FRAME is tagged as urgent."
-  (frame-parameter frame 'exwm-urgency))
+  "Determine if FRAME is tagged as urgent.
+
+Always return nil if `exwm-modeline-display-urgent' is not set."
+  (when exwm-modeline-display-urgent
+    (frame-parameter frame 'exwm-urgency)))
 
 (defun exwm-modeline--populated-p (frame)
   "Determine if FRAME has any X windows."
@@ -196,12 +223,10 @@ face in the segment has to change."
   (exwm-modeline-update))
 
 (defun exwm-modeline--urgency-advice (&rest _)
-  "Update the modeline after change in the urgency status.
+  "Update the modeline after a change in the urgency status.
 
-This function is meant to be advised :after the following:
-- `exwm--update-hints'
-- `exwm--on-ClientMessage'
-Also to be put in the hook `exwm-workspace-switch-hook'.
+This function is meant to be advised :after `exwm--update-hints' and
+be in the hook `exwm-workspace-switch-hook'.
 
 The modeline is updated if `exwm-workspace--switch-history-outdated'
 is set to t, because EXWM sets that variable whenever a window updates
@@ -209,7 +234,14 @@ it urgency status.  To avoid running the function too often,
 `exwm-workspace--update-switch-history' is also called, which resets
 the variable.
 
-Because the first two functions are very much critical for the normal
+However, one issue with the mentioned variable is that it is also
+set whenever the workspace is switched, so using that advice also
+increases the number of required updates.  Optimizing that would
+require more substantial modifications to EXWM code, so in this
+package applying that advice is made optional with the
+`exwm-modeline-display-urgent' variable.
+
+Because the first function is very much critical for the normal
 functioning of EXWM, the entire thing is wrapped in
 `with-demoted-errors'."
   (with-demoted-errors "Error in exwm-modeline--urgency-advice: %S"
@@ -229,10 +261,16 @@ monitor.  To display only the current workspace, enable
 `exwm-modeline-short', and to disable the filtering by the
 monitor, disable `exwm-modeline-randr'.
 
-Also take a look at the `exwm-modeline' group for faces
+If `exwm-modeline-display-urgent' is set, the mode also displays
+if the workspace has a window market as urgent.  However, this
+option forces the modeline to update after every workspace
+switch, so it may be wise to disable that in case of performance
+issues.
+
+Also, take a look at the `exwm-modeline' group for faces
 customization.
 
-This implementation indents to reduce the count of times of
+This implementation intends to reduce the count of times of
 evaluating the modestring; the rendered modestring is saved as a
 frame parameter, and `exwm-modeline-segment' just returns it.
 
@@ -250,9 +288,9 @@ cases when the workspace list changes."
         (add-hook 'exwm-manage-finish-hook #'exwm-modeline-update)
         (advice-add #'exwm-manage--unmanage-window
                     :after #'exwm-modeline--unmanage-advice)
-        (add-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)
-        (advice-add #'exwm--update-hints :after #'exwm-modeline--urgency-advice)
-        (advice-add #'exwm--on-ClientMessage :after #'exwm-modeline--urgency-advice))
+        (when exwm-modeline-display-urgent
+          (advice-add #'exwm--update-hints :after #'exwm-modeline--urgency-advice)
+          (add-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)))
     (setq global-mode-string (delete '(:eval (exwm-modeline-segment))
                                      global-mode-string))
     (remove-hook 'exwm-workspace-list-change-hook #'exwm-modeline-update)
@@ -260,9 +298,8 @@ cases when the workspace list changes."
     (remove-hook 'exwm-manage-finish-hook #'exwm-modeline-update)
     (advice-remove #'exwm-manage--unmanage-window
                    #'exwm-modeline--unmanage-advice)
-    (remove-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)
     (advice-remove #'exwm--update-hints #'exwm-modeline--urgency-advice)
-    (advice-remove #'exwm--on-ClientMessage #'exwm-modeline--urgency-advice)))
+    (remove-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)))
 
 (provide 'exwm-modeline)
 ;;; exwm-modeline.el ends here
