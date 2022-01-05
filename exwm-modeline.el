@@ -37,6 +37,8 @@
 ;; Take a look at `exwm-modeline-mode' for more info.
 
 ;;; Code:
+(require 'exwm)
+(require 'exwm-randr)
 (require 'exwm-workspace)
 (require 'exwm-manage)
 
@@ -66,10 +68,9 @@ workspaces."
   :type 'boolean)
 
 (defface exwm-modeline-current-workspace
-  ;; I'd rather :inherit warning there, but that could lead to
-  ;; unexpected effects.
+  ;; I'd rather :inherit and override warning there, but well
   `((t :foreground ,(face-foreground 'warning) :weight bold))
-  "Face for the current workspace. "
+  "Face for the current workspace."
   :group 'exwm-modeline)
 
 (defface exwm-modeline-populated-workspace
@@ -78,12 +79,12 @@ workspaces."
   :group 'exwm-modeline)
 
 (defface exwm-modeline-empty-workspace
-  `((t (:foreground ,(face-foreground 'mode-line))))
+  `((t (:inherit mode-line)))
   "Face for any workspace without an X window."
   :group 'exwm-modeline)
 
 (defface exwm-modeline-urgent-workspace
-  '((t (:inherit custom-invalid)))
+  '((t (:inherit error)))
   "Face for any workspace that is tagged as urgent by X."
   :group 'exwm-modeline)
 
@@ -144,13 +145,13 @@ WORKSPACE-LIST is the list of frames to display."
 
 (defun exwm-modeline--randr-workspaces ()
   "Get workspaces on the same monitor as current frame."
-  (if-let ((monitor (plist-get exwm-randr-workspace-output-plist
+  (if-let ((monitor (plist-get exwm-randr-workspace-monitor-plist
                                (cl-position (selected-frame)
                                             exwm-workspace--list)))
            ;; This list of frame actually can be wrongly ordered,
            ;; hence the second loop.  The number of values is quite
            ;; small, so it's not like o(n^2) can cause any issues.
-           (frames (cl-loop for (key value) on exwm-randr-workspace-output-plist
+           (frames (cl-loop for (key value) on exwm-randr-workspace-monitor-plist
                             by 'cddr
                             if (string-equal value monitor)
                             collect (nth key exwm-workspace--list))))
@@ -158,7 +159,7 @@ WORKSPACE-LIST is the list of frames to display."
                if (member frame frames)
                collect frame)
     (cl-loop with indices = (cl-loop
-                             for (key value) on exwm-randr-workspace-output-plist
+                             for (key _) on exwm-randr-workspace-monitor-plist
                              by 'cddr collect key)
              for i from 0 to (1- (length exwm-workspace--list))
              for frame in exwm-workspace--list
@@ -186,13 +187,35 @@ WORKSPACE-LIST is the list of frames to display."
   (frame-parameter nil 'exwm-modeline--string))
 
 (defun exwm-modeline--unmanage-advice (&rest _)
-  "An advice to update the modeline.
+  "Update the modeline after unmanaging a window.
 
-This one is meant to be attached :after
-`exwm-manage--unmanage-window', because that's when a workspace
-can lose all its X windows and thus may become \"unpopulated\",
-i.e. the face in the segment has to change."
+This function is meant to be advised :after
+`exwm-manage--unmanage-window', because that's when a workspace can
+lose all its X windows and thus may become \"unpopulated\",i.e. the
+face in the segment has to change."
   (exwm-modeline-update))
+
+(defun exwm-modeline--urgency-advice (&rest _)
+  "Update the modeline after change in the urgency status.
+
+This function is meant to be advised :after the following:
+- `exwm--update-hints'
+- `exwm--on-ClientMessage'
+Also to be put in the hook `exwm-workspace-switch-hook'.
+
+The modeline is updated if `exwm-workspace--switch-history-outdated'
+is set to t, because EXWM sets that variable whenever a window updates
+it urgency status.  To avoid running the function too often,
+`exwm-workspace--update-switch-history' is also called, which resets
+the variable.
+
+Because the first two functions are very much critical for the normal
+functioning of EXWM, the entire thing is wrapped in
+`with-demoted-errors'."
+  (with-demoted-errors "Error in exwm-modeline--urgency-advice: %S"
+    (when exwm-workspace--switch-history-outdated
+      (exwm-modeline-update)
+      (exwm-workspace--update-switch-history))))
 
 ;;;###autoload
 (define-minor-mode exwm-modeline-mode
@@ -226,14 +249,20 @@ cases when the workspace list changes."
         (add-hook 'exwm-randr-refresh-hook #'exwm-modeline-update)
         (add-hook 'exwm-manage-finish-hook #'exwm-modeline-update)
         (advice-add #'exwm-manage--unmanage-window
-                    :after #'exwm-modeline--unmanage-advice))
+                    :after #'exwm-modeline--unmanage-advice)
+        (add-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)
+        (advice-add #'exwm--update-hints :after #'exwm-modeline--urgency-advice)
+        (advice-add #'exwm--on-ClientMessage :after #'exwm-modeline--urgency-advice))
     (setq global-mode-string (delete '(:eval (exwm-modeline-segment))
                                      global-mode-string))
     (remove-hook 'exwm-workspace-list-change-hook #'exwm-modeline-update)
     (remove-hook 'exwm-randr-refresh-hook #'exwm-modeline-update)
     (remove-hook 'exwm-manage-finish-hook #'exwm-modeline-update)
     (advice-remove #'exwm-manage--unmanage-window
-                   #'exwm-modeline--unmanage-advice)))
+                   #'exwm-modeline--unmanage-advice)
+    (remove-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)
+    (advice-remove #'exwm--update-hints #'exwm-modeline--urgency-advice)
+    (advice-remove #'exwm--on-ClientMessage #'exwm-modeline--urgency-advice)))
 
 (provide 'exwm-modeline)
 ;;; exwm-modeline.el ends here
