@@ -63,7 +63,8 @@ workspaces."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (exwm-modeline-update)))
+         (when exwm-modeline-mode
+           (exwm-modeline-update))))
 
 (defcustom exwm-modeline-randr t
   "When set, only show workspaces on the current monitor."
@@ -71,7 +72,8 @@ workspaces."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (exwm-modeline-update)))
+         (when exwm-modeline-mode
+           (exwm-modeline-update))))
 
 (defcustom exwm-modeline-display-urgent t
   "When set, display the urgent status in the modeline.
@@ -82,8 +84,8 @@ switch, so the number of updates is increased significantly."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (exwm-modeline-update)
          (when exwm-modeline-mode
+           (exwm-modeline-update)
            (if value
                (progn
                  (advice-add #'exwm--update-hints :after #'exwm-modeline--urgency-advice)
