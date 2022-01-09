@@ -63,7 +63,7 @@ workspaces."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (when exwm-modeline-mode
+         (when (bound-and-true-p exwm-modeline-mode)
            (exwm-modeline-update))))
 
 (defcustom exwm-modeline-randr t
@@ -72,7 +72,7 @@ workspaces."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (when exwm-modeline-mode
+         (when (bound-and-true-p exwm-modeline-mode)
            (exwm-modeline-update))))
 
 (defcustom exwm-modeline-display-urgent t
@@ -84,7 +84,7 @@ switch, so the number of updates is increased significantly."
   :type 'boolean
   :set (lambda (sym value)
          (set-default sym value)
-         (when exwm-modeline-mode
+         (when (bound-and-true-p exwm-modeline-mode)
            (exwm-modeline-update)
            (if value
                (progn
