@@ -1,6 +1,6 @@
 ;;; exwm-modeline.el ---  A modeline segment for EXWM workspaces -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021 Korytov Pavel
+;; Copyright (C) 2021-2022 Korytov Pavel
 ;; Copyright (C) 2021 Ellis Kenyő
 ;; Copyright (C) 2008-2020 Natalie Weizenbaum <nex342@gmail.com>
 
