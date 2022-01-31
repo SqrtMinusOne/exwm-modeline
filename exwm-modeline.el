@@ -8,7 +8,7 @@
 ;; Maintainer: Korytov Pavel <thexcloud@gmail.com>
 ;; Version: 0.1.3
 ;; Package-Requires: ((emacs "27.1") (exwm "0.26"))
-;; Homepage: https://github.com/SqrtMinusOne/pomm.el
+;; Homepage: https://github.com/SqrtMinusOne/exwm-modeline
 
 ;; This file is NOT part of GNU Emacs.
 
