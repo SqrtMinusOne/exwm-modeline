@@ -1,5 +1,7 @@
 #+TITLE: exwm-modeline
 
+[[https://melpa.org/#/exwm-modeline][file:https://melpa.org/packages/exwm-modeline-badge.svg]]
+
 A modeline segment to display exwm workspaces.
 
 Here's how it looks near the list of [[https://github.com/nex3/perspective-el][perspectives]] (the segment of the current package is to the left):
@@ -13,15 +15,11 @@ Features:
 - Numbers are clickable.
 
 * Installation
-As the package isn't yet available anywhere but in this repository, you can clone the repository, add it to the =load-path=, and =require= the package:
-#+begin_src emacs-lisp
-(require 'exwm-modeline)
-#+end_src
+The package is available on MELPA. Install it however you usually install packages, I use [[https://github.com/jwiegley/use-package][use-package]] and [[https://github.com/raxod502/straight.el][straight.el]]:
 
-My preferred way is to use =use-package= with =straight=:
 #+begin_src emacs-lisp
 (use-package exwm-modeline
-  :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
+  :straight t
   :after (exwm))
 #+end_src
 
