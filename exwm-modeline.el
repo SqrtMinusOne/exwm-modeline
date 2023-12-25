@@ -38,6 +38,8 @@
 ;; Take a look at `exwm-modeline-mode' for more info.
 
 ;;; Code:
+(eval-when-compile
+  (require 'cl-lib))
 (require 'exwm)
 (require 'exwm-randr)
 (require 'exwm-workspace)
