@@ -1,6 +1,6 @@
 ;;; exwm-modeline.el ---  A modeline segment for EXWM workspaces -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2022 Korytov Pavel
+;; Copyright (C) 2021-2023 Korytov Pavel
 ;; Copyright (C) 2021 Ellis Kenyő
 ;; Copyright (C) 2008-2020 Natalie Weizenbaum <nex342@gmail.com>
 
@@ -9,6 +9,7 @@
 ;; Version: 0.1.3
 ;; Package-Requires: ((emacs "27.1") (exwm "0.26"))
 ;; Homepage: https://github.com/SqrtMinusOne/exwm-modeline
+;; Published-At: 2021-12-22
 
 ;; This file is NOT part of GNU Emacs.
 
