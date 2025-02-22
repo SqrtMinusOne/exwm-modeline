@@ -96,6 +96,20 @@ switch, so the number of updates is increased significantly."
              (advice-remove #'exwm--update-hints #'exwm-modeline--urgency-advice)
              (remove-hook 'exwm-workspace-switch-hook #'exwm-modeline--urgency-advice)))))
 
+(defcustom exwm-modeline-workspace-index-map 'exwm-workspace-index-map
+  "Function for mapping a workspace index to a string for display.
+
+If the value if 'exwm-workspace-index-map, dereference the
+`exwm-workspace-index-map'variable.  Otherwise, use a function."
+  :group 'exwm-workspace
+  :type '(choice
+          (symbol exwm-workspace-index-map :tag "Use EXWM default")
+          (function))
+  :set (lambda (sym value)
+         (set-default sym value)
+         (when (bound-and-true-p exwm-modeline-mode)
+           (exwm-modeline-update))))
+
 (defface exwm-modeline-current-workspace
   ;; I'd rather :inherit and override warning there, but well
   `((t :foreground ,(face-foreground 'warning) :weight bold))
@@ -130,6 +144,14 @@ Always return nil if `exwm-modeline-display-urgent' is not set."
            if (eq frame (buffer-local-value 'exwm--frame (cdr item)))
            return t))
 
+(defun exwm-modeline--workspace-index-map (i)
+  "Map the workspace index I to a string for display.
+
+See `exwm-modeline-workspace-index-map' for behaviour."
+  (if (eq exwm-modeline-workspace-index-map 'exwm-workspace-index-map)
+      (funcall exwm-workspace-index-map i)
+    (funcall exwm-modeline-workspace-index-map i)))
+
 (defun exwm-modeline--click (event)
   "Process a click EVENT on the modeline segment."
   (interactive "e")
@@ -137,7 +159,7 @@ Always return nil if `exwm-modeline-display-urgent' is not set."
       (target
        (cl-loop with name = (format "%s" (car (posn-string (event-start event))))
                 for i from 0 to (1- (length exwm-workspace--list))
-                if (string-equal (funcall exwm-workspace-index-map i) name)
+                if (string-equal (exwm-modeline--workspace-index-map i) name)
                 return i))
     (exwm-workspace-switch target)))
 
@@ -153,8 +175,8 @@ Always return nil if `exwm-modeline-display-urgent' is not set."
 WORKSPACE-LIST is the list of frames to display."
   (cl-loop for frame in workspace-list
            for i from 0 to (length workspace-list)
-           for workspace-name = (funcall exwm-workspace-index-map
-                                         (exwm-workspace--position frame))
+           for workspace-name = (exwm-modeline--workspace-index-map
+                                 (exwm-workspace--position frame))
            with current-frame = (selected-frame)
            if (= i 0) collect (nth 0 exwm-modeline-dividers)
            collect
